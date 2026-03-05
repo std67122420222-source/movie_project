@@ -1,16 +1,19 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, url_for, session
 from models import db, User, Movie
 
 app = Flask(__name__)
-app.secret_key = "netflix_secret"
+app.secret_key = "secret123"
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movie.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movie.db"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
-
-with app.app_context():
-    db.create_all()
 
 
 @app.route("/")
