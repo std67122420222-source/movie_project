@@ -5,11 +5,9 @@ from models import db, User, Movie
 app = Flask(__name__)
 app.secret_key = "secret123"
 
-# ---------- DATABASE ----------
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if DATABASE_URL:
-    # Render ให้ postgres:// ต้องแปลงเป็น postgresql://
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 else:
