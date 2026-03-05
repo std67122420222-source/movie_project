@@ -1,17 +1,29 @@
+import os
 from flask import Flask, render_template, request, redirect, session
 from models import db, User, Movie
 
 app = Flask(__name__)
-app.secret_key = "netflix_secret"
+app.secret_key = "secret123"
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movie.db"
+# ---------- DATABASE ----------
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    # Render ให้ postgres:// ต้องแปลงเป็น postgresql://
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://")
+    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///movie.db"
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
+# ---------- CREATE TABLE ----------
 with app.app_context():
     db.create_all()
 
+# ---------- ROUTES ----------
 
 @app.route("/")
 def index():
@@ -21,7 +33,7 @@ def index():
 
 @app.route("/movie/<int:id>")
 def movie_detail(id):
-    movie = Movie.query.get(id)
+    movie = Movie.query.get_or_404(id)
     return render_template("movie_detail.html", movie=movie)
 
 
@@ -32,7 +44,7 @@ def register():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        user = User(username=username,password=password)
+        user = User(username=username, password=password)
 
         db.session.add(user)
         db.session.commit()
@@ -50,7 +62,7 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        user = User.query.filter_by(username=username,password=password).first()
+        user = User.query.filter_by(username=username, password=password).first()
 
         if user:
             session["user"] = username
@@ -61,9 +73,7 @@ def login():
 
 @app.route("/logout")
 def logout():
-
-    session.pop("user",None)
-
+    session.pop("user", None)
     return redirect("/")
 
 
@@ -80,7 +90,12 @@ def add_movie():
         year = request.form.get("year")
         image_url = request.form.get("image_url")
 
-        movie = Movie(title=title,genre=genre,year=year,image_url=image_url)
+        movie = Movie(
+            title=title,
+            genre=genre,
+            year=year,
+            image_url=image_url
+        )
 
         db.session.add(movie)
         db.session.commit()
@@ -96,7 +111,7 @@ def edit_movie(id):
     if "user" not in session:
         return redirect("/login")
 
-    movie = Movie.query.get(id)
+    movie = Movie.query.get_or_404(id)
 
     if request.method == "POST":
 
@@ -118,7 +133,7 @@ def delete_movie(id):
     if "user" not in session:
         return redirect("/login")
 
-    movie = Movie.query.get(id)
+    movie = Movie.query.get_or_404(id)
 
     db.session.delete(movie)
     db.session.commit()
